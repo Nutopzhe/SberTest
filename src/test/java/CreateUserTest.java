@@ -1,6 +1,10 @@
+import io.qameta.allure.Step;
+import io.qameta.allure.restassured.AllureRestAssured;
 import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.http.ContentType;
+import io.restassured.response.ValidatableResponse;
 import io.restassured.specification.RequestSpecification;
+import org.hamcrest.Matchers;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import pojo.User;
@@ -25,8 +29,6 @@ public class CreateUserTest {
         //случайная генерация имени и email
         String email = (UUID.randomUUID() + "@mail.com").replace("-", "");
         String name = (UUID.randomUUID().toString()).replace("-", "");
-        
-        //компании должны быть созданы заранее (каждый день компании затираются)
         List<Integer> companies = Arrays.asList(29, 31);
         List<Integer> tasks = Arrays.asList(12);
         String hobby = "Стрельба из лука";
@@ -34,23 +36,29 @@ public class CreateUserTest {
         String inn = "123456789012";
 
         User userReq = new User(email, name, tasks, companies, hobby, phone, inn);
-
         return new Object[][]{{userReq}};
     }
 
+    @Step("Проверка запроса")
     @Test(testName = "Checking response fields when creating a user", dataProvider = "createNewUser")
     public void createUser(User userReq) {
-
-        //отправка post запроса с созданными пользователем, и дальнейшей проверкой полей ответа
-        given()
+        ValidatableResponse response = given()
                 .spec(SPEC)
                 .body(userReq)
-                .when().log().all().post()
-                .then().log().all()
-                .body("name", equalTo(userReq.getName()))
+                .when()
+                .filter(new AllureRestAssured())
+                .log().all().post()
+                .then().log().all();
+
+        testResponse(response, userReq);
+    }
+
+    @Step("Проверка ответа")
+    public void testResponse(ValidatableResponse response, User userReq) {
+        response.body("name", equalTo(userReq.getName()))
                 .body("email", equalTo(userReq.getEmail()))
                 .body("phone", equalTo(userReq.getPhone()))
-                .body("hobby", equalTo(userReq.getHobby()));
-
+                .body("hobby", equalTo(userReq.getHobby()))
+                .body("inn", Matchers.blankOrNullString());
     }
 }
