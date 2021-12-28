@@ -39,7 +39,7 @@ public class CreateUserTest {
         return new Object[][]{{userReq}};
     }
 
-    @Step("Проверка запроса")
+    @Step("Отправка запроса")
     @Test(testName = "Checking response fields when creating a user", dataProvider = "createNewUser")
     public void createUser(User userReq) {
         ValidatableResponse response = given()
@@ -47,8 +47,8 @@ public class CreateUserTest {
                 .body(userReq)
                 .when()
                 .filter(new AllureRestAssured())
-                .log().all().post()
-                .then().log().all();
+                .post()
+                .then();
 
         testResponse(response, userReq);
     }
